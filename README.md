@@ -230,7 +230,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-  - The HTML file is assumed to be a converted Jupyter notebook, so the README references both formats.
-- **Actionable**: Includes installation, usage, and contribution guidelines for practical use.
-
-If you need adjustments (e.g., specific repository details, additional sections, or a different format), let me know!
