@@ -91,7 +91,7 @@ The StackingClassifier with threshold = 0.2425 is the best model because:
 ## Usage
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/telecom-churn-prediction.git
+   git clone https://github.com/Vraj-Data-Scientist/telecom-churn-prediction.git
    ```
 2. **Install Dependencies**:
    ```bash
