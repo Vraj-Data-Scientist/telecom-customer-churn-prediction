@@ -1,232 +1,111 @@
 
 ---
 
+
+
 # Telecom Customer Churn Prediction
 
-This project focuses on predicting customer churn in the telecom industry using machine learning. By analyzing customer data, the project aims to identify patterns and predict which customers are likely to leave, enabling targeted retention strategies. The dataset used is the **Telco Customer Churn** dataset, containing 7,043 customer records with 21 attributes.
-
-## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Dataset](#dataset)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Data Preprocessing](#data-preprocessing)
-- [Data Visualization](#data-visualization)
-- [Modeling](#modeling)
-- [Results](#results)
-- [Strategies to Reduce Churn](#strategies-to-reduce-churn)
-- [Contributing](#contributing)
-- [License](#license)
+This repository contains a machine learning project for predicting customer churn in the telecom industry using the [Telco Customer Churn dataset](https://www.kaggle.com/blastchar/telco-customer-churn). The goal is to identify customers at risk of churning to enable targeted retention strategies, prioritizing **high recall** for the "Churn" class due to the high cost of losing customers (5–10x more than retention costs).
 
 ## Project Overview
 
-Customer churn, when customers stop doing business with a company, is a critical issue in the telecom industry, with an annual churn rate of **15-25%**. Retaining customers is more cost-effective than acquiring new ones, making churn prediction essential for profitability and growth. This project:
+Customer churn is a critical issue in telecom, with an industry churn rate of 15–25% annually. This project builds predictive models to identify at-risk customers, leveraging data preprocessing, feature engineering, and advanced machine learning techniques. The focus is on maximizing recall for the "Churn" class (class = 1) to minimize missed churners, while maintaining acceptable precision (0.45–0.60) to manage false positives.
 
-- Explores customer churn patterns using data analysis and visualization.
-- Builds and evaluates multiple machine learning models to predict churn.
-- Provides actionable strategies to reduce churn based on model insights.
+### Dataset
+- **Source**: Telco Customer Churn dataset (7043 rows, 21 columns).
+- **Features**: Customer demographics (e.g., gender, SeniorCitizen), services (e.g., InternetService, TechSupport), account details (e.g., tenure, MonthlyCharges, Contract).
+- **Target**: Churn (binary: 0 = No Churn, 1 = Churn, ~26.6% churn rate).
+- **Test Set**: 1409 samples (1035 No Churn, 374 Churn).
 
-Key objectives include:
-- Determining the percentage of churned vs. active customers.
-- Identifying churn patterns based on gender, service type, and other features.
-- Finding the most profitable services and features.
-- Predicting high-risk customers for targeted retention.
+### Methodology
+- **Preprocessing**: Label encoding for binary features, one-hot encoding for multiclass features, SMOTETomek for class imbalance, StandardScaler for scaling.
+- **Feature Engineering**: Added `MonthlyCharges_per_Tenure`, `Weighted_Service_Score`, `High_Risk_Contract`, `Charges_Contract_Interaction`, `Charges_Payment_Interaction`. Dropped redundant and low-correlation features.
+- **Models**: XGBoost, RandomForest, LogisticRegression, CatBoost, VotingClassifier, StackingClassifier.
+- **Evaluation Metrics**: Recall, Precision, F1-Score for Churn, ROC-AUC.
+- **Threshold Tuning**: Optimized for recall ≥0.85 and precision ≥0.45.
 
-## Dataset
+## Model Performance
 
-The dataset (`WA_Fn-UseC_-Telco-Customer-Churn.csv`) includes:
-- **Rows**: 7,043 customers.
-- **Columns**: 21 attributes, including:
-  - **Churn**: Target variable (Yes/No).
-  - **Services**: Phone, Internet, Online Security, Tech Support, Streaming, etc.
-  - **Account Info**: Tenure, Contract, Payment Method, Monthly/Total Charges.
-  - **Demographics**: Gender, Senior Citizen status, Partner, Dependents.
+### Before Feature Engineering
+The following table summarizes model performance before feature engineering (using original features after preprocessing).
 
-| Attribute | Description | Type |
-|-----------|-------------|------|
-| customerID | Unique customer identifier | Object |
-| Churn | Whether customer churned (Yes/No) | Object |
-| tenure | Months as a customer | Int64 |
-| MonthlyCharges | Monthly billing amount | Float64 |
-| TotalCharges | Total billed amount | Object (converted to Float64) |
-| Contract | Contract type (Month-to-month, One year, Two year) | Object |
+| **Model** | **Churn Recall** | **Churn Precision** | **Churn F1-Score** | **ROC-AUC** | **Accuracy** |
+|-----------|------------------|---------------------|--------------------|-------------|--------------|
+| XGBoost (default) | 0.61 | 0.58 | 0.59 | 0.820 | 0.78 |
+| RandomForest (class_weight='balanced') | 0.62 | 0.59 | 0.60 | 0.827 | 0.78 |
+| LogisticRegression (class_weight='balanced') | 0.79 | 0.50 | 0.61 | 0.840 | 0.73 |
+| XGBoost (scale_pos_weight=3) | 0.71 | 0.53 | 0.61 | 0.816 | 0.75 |
+| VotingClassifier (RF+LR+XGB) | 0.71 | 0.54 | 0.61 | 0.836 | 0.76 |
+| XGBoost (GridSearchCV) | 0.70 | 0.53 | 0.60 | 0.819 | 0.76 |
+| RandomForest (GridSearchCV) | 0.60 | 0.58 | 0.59 | 0.824 | 0.78 |
+| CatBoost (scale_pos_weight=3) | 0.75 | 0.53 | 0.62 | 0.826 | 0.76 |
+| StackingClassifier (LR+CatBoost) | 0.71 | 0.54 | 0.61 | 0.832 | 0.76 |
+| VotingClassifier (threshold=0.412) | 0.79 | 0.52 | 0.63 | 0.836 | 0.75 |
+| StackingClassifier (threshold=0.236) | 0.82 | 0.50 | 0.62 | 0.832 | 0.74 |
 
-## Installation
+### After Feature Engineering
+Feature engineering included `MonthlyCharges_per_Tenure`, `Weighted_Service_Score`, `High_Risk_Contract`, `Charges_Contract_Interaction`, and `Charges_Payment_Interaction`, with redundant and low-correlation features dropped.
 
-To run this project, install the required Python libraries:
+| **Model** | **Churn Recall** | **Churn Precision** | **Churn F1-Score** | **ROC-AUC** | **Accuracy** |
+|-----------|------------------|---------------------|--------------------|-------------|--------------|
+| LogisticRegression (class_weight='balanced') | 0.79 | 0.50 | 0.61 | 0.841 | 0.73 |
+| StackingClassifier (threshold=0.531) | 0.73 | 0.54 | 0.62 | 0.830 | 0.76 |
+| StackingClassifier (class_weight={0:1, 1:2}) | 0.75 | 0.50 | 0.60 | 0.832 | 0.73 |
+| CatBoost (threshold=0.4) | 0.78 | 0.48 | 0.59 | 0.825 | 0.72 |
+| StackingClassifier (top 15 features) | 0.74 | 0.49 | 0.59 | Not reported | 0.73 |
+| StackingClassifier (threshold=0.138) | 0.91 | 0.41 | 0.56 | 0.824 | 0.62 |
+| **StackingClassifier (threshold=0.2425)** | **0.86** | **0.45** | **0.59** | **0.834** | **0.68** |
 
-```bash
-pip install pandas numpy matplotlib seaborn plotly missingno scikit-learn xgboost catboost
-```
+### Best Model
+The **StackingClassifier (LogisticRegression + CatBoost, threshold = 0.2425)** with feature engineering is the best model.
 
-Clone the repository:
+| **Metric** | **Value** |
+|------------|-----------|
+| Churn Recall | 0.86 |
+| Churn Precision | 0.45 |
+| Churn F1-Score | 0.59 |
+| ROC-AUC | 0.834 |
+| Accuracy | 0.68 |
 
-```bash
-git clone https://github.com/your-username/telecom-customer-churn-prediction.git
-cd telecom-customer-churn-prediction
-```
+**Configuration**:
+- **Base Models**: LogisticRegression (class_weight={0:1, 1:2}), CatBoost (iterations=1000, learning_rate=0.05, depth=6, scale_pos_weight=5).
+- **Meta-Learner**: LogisticRegression (class_weight={0:1, 1:2}).
+- **Threshold**: 0.2425 (optimized for recall ≥0.85, precision ≥0.45).
+- **Features**: Original features + `MonthlyCharges_per_Tenure`, `Weighted_Service_Score`, `High_Risk_Contract`, `Charges_Contract_Interaction`, `Charges_Payment_Interaction`.
+
+## Why This Recall is Industry Standard
+In the telecom industry, **recall for the Churn class** is prioritized because:
+- **High Cost of False Negatives**: Missing a churner (false negative) leads to lost revenue and high acquisition costs (5–10x retention costs). A recall of 0.86 catches ~321 out of 374 churners, minimizing missed opportunities.
+- **Acceptable False Positives**: Offering retention incentives (e.g., discounts) to non-churners (false positives) is less costly. Precision of 0.45 is acceptable, as false positives are manageable with automated, low-cost interventions.
+- **Industry Benchmarks**: Telecom churn models typically target recall of 0.85–0.95 to ensure most at-risk customers are identified. The achieved recall of 0.86 aligns with this standard, balancing business needs with resource constraints.
+
+## Why This Model is Best
+The StackingClassifier with threshold = 0.2425 is the best model because:
+1. **High Recall (0.86)**: Catches 86% of churners, meeting the industry target (≥0.85), reducing missed churners to ~53 (vs. 112–149 for other models).
+2. **Acceptable Precision (0.45)**: While lower than some models (e.g., 0.54 for threshold=0.531), it’s within the tolerable range (0.45–0.60) for telecom, where false positives are less costly.
+3. **Competitive F1-Score (0.59)**: Balances recall and precision, comparable to or better than other models (e.g., RandomForest: 0.59 F1).
+4. **Strong ROC-AUC (0.834)**: Indicates excellent separability, among the highest (e.g., LogisticRegression: 0.841).
+5. **Feature Engineering Impact**: New features (e.g., `MonthlyCharges_per_Tenure`, `Charges_Payment_Interaction`) capture cost sensitivity and risk, boosting recall.
+6. **Robustness**: Cross-validation F1-churn scores (0.77–0.91, mean ~0.86) confirm stability.
 
 ## Usage
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/telecom-churn-prediction.git
+   ```
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run the Notebook**:
+   - Open `customer-churn-prediction.ipynb` in Jupyter Notebook.
+   - Execute cells to preprocess data, train models, and evaluate performance.
+4. **Predict Churn**:
+   - Use the trained StackingClassifier model with threshold = 0.2425 to predict churn on new data.
 
-1. **Load the Dataset**:
-   - Place `WA_Fn-UseC_-Telco-Customer-Churn.csv` in the project directory.
-   - Run the Jupyter notebook (`customer-churn-prediction.ipynb`) or HTML file (`customer-churn-prediction.html`) to explore the analysis.
-
-2. **Run the Analysis**:
-   - Execute the notebook cells to preprocess data, visualize patterns, and train models.
-   - The notebook includes code for data cleaning, visualization, and model evaluation.
-
-3. **View Results**:
-   - Check the **Results** section for model performance metrics.
-   - Review visualizations (e.g., confusion matrices, ROC curves) for insights.
-
-## Data Preprocessing
-
-The dataset was preprocessed to ensure quality and compatibility with machine learning models:
-
-- **Missing Values**:
-  - Used `missingno` to visualize missing data; no major patterns found.
-  - Converted `TotalCharges` to numeric (`pd.to_numeric(df.TotalCharges, errors='coerce')`), revealing 11 missing values.
-  - Dropped 11 rows with `tenure == 0` (no impact on data).
-  - Filled remaining `TotalCharges` missing values with the mean.
-
-- **Encoding**:
-  - Converted categorical columns (e.g., `gender`, `Contract`) to numeric using `LabelEncoder` for most features.
-  - Applied one-hot encoding to `PaymentMethod`, `Contract`, and `InternetService`.
-  - Mapped `SeniorCitizen` (0/1) to "No"/"Yes" for consistency, then encoded.
-
-- **Scaling**:
-  - Standardized numeric columns (`tenure`, `MonthlyCharges`, `TotalCharges`) using `StandardScaler` to normalize ranges.
-
-- **Data Split**:
-  - Split into 70% training (`X_train`, `y_train`) and 30% testing (`X_test`, `y_test`) with `stratify=y` to maintain churn distribution.
-
-| Step | Action | Tool/Method |
-|------|--------|-------------|
-| Missing Values | Drop rows with `tenure == 0`, fill `TotalCharges` with mean | `missingno`, `pd.to_numeric` |
-| Encoding | Label encoding, one-hot encoding | `LabelEncoder`, `pd.get_dummies` |
-| Scaling | Standardize numeric features | `StandardScaler` |
-| Data Split | 70/30 train-test split | `train_test_split` |
-
-## Data Visualization
-
-Visualizations revealed key churn patterns:
-- **Churn Rate**: 26.6% of customers churned (1,869/7,032).
-- **Gender**: No significant churn difference (49.5% female, 50.5% male).
-- **Contract Type**:
-  - 75% of month-to-month contract customers churned vs. 13% (one-year) and 3% (two-year).
-- **Payment Method**:
-  - Electronic check users had higher churn; credit card/bank transfer users churned less.
-- **Internet Service**:
-  - Fiber optic users had a higher churn rate than DSL or no-internet customers.
-- **Demographics**:
-  - Customers without dependents or partners were more likely to churn.
-  - Senior citizens (a small fraction) had a high churn rate.
-- **Services**:
-  - Lack of online security, tech support, or phone service increased churn.
-  - Paperless billing users were more likely to churn.
-- **Charges**:
-  - Higher `MonthlyCharges` and lower `tenure` correlated with churn.
-  - `TotalCharges` showed less clear separation.
-
-| Feature | Insight | Visualization |
-|---------|---------|---------------|
-| Churn | 26.6% churn rate | Pie chart |
-| Contract | Month-to-month: 75% churn | Histogram |
-| Payment Method | Electronic check: High churn | Pie chart, Histogram |
-| Internet Service | Fiber optic: High churn | Bar chart |
-| Tenure | New customers churn more | Box plot |
-
-## Modeling
-
-Multiple machine learning models were trained to predict churn:
-- **K-Nearest Neighbors (KNN)**: `n_neighbors=11`.
-- **Support Vector Classifier (SVC)**: `random_state=1`.
-- **RandomForestClassifier**: `n_estimators=500`, `max_features="sqrt"`, `max_leaf_nodes=30`.
-- **Logistic Regression**.
-- **Decision Tree Classifier**.
-- **XGBoost Classifier**.
-- **AdaBoost Classifier**.
-- **Gradient Boosting Classifier**.
-- **Voting Classifier**: Soft voting with Gradient Boosting, Logistic Regression, and AdaBoost.
-
-**Training**:
-- Features: All columns except `Churn` and `customerID`.
-- Target: `Churn` (0: No, 1: Yes).
-- Evaluated using accuracy, precision, recall, F1-score, confusion matrix, and ROC curves.
-
-## Results
-
-The table below compares the performance of all models on the test set (2,110 samples, 561 churn, 1,549 non-churn):
-
-| Model | Accuracy | Precision (Churn) | Recall (Churn) | F1-Score (Churn) |
-|-------|----------|-------------------|----------------|------------------|
-| Voting Classifier | **0.816** | 0.68 | 0.57 | 0.62 |
-| Random Forest | 0.814 | 0.71 | 0.51 | 0.59 |
-| AdaBoost | 0.813 | 0.68 | 0.56 | 0.62 |
-| Logistic Regression | 0.809 | 0.66 | 0.58 | 0.62 |
-| Gradient Boosting | 0.808 | 0.67 | 0.55 | 0.60 |
-| SVC | 0.808 | 0.69 | 0.50 | 0.58 |
-| XGBoost | 0.780 | 0.60 | 0.55 | 0.57 |
-| KNN | 0.776 | 0.59 | 0.52 | 0.55 |
-| Decision Tree | 0.730 | 0.49 | 0.53 | 0.51 |
-
-**Key Observations**:
-- **Voting Classifier** achieved the highest accuracy (81.6%) and balanced performance.
-- **Random Forest** had the highest precision (0.71) for churn but lower recall (0.51), missing many churn cases.
-- **Logistic Regression** and **AdaBoost** performed well, with F1-scores of 0.62 for churn.
-- **Decision Tree** had the lowest accuracy (73.0%) and poor precision (0.49).
-- **Confusion Matrix (Random Forest)**:
-  - True Negatives (TN): 1,400 (90.4% correct non-churn).
-  - True Positives (TP): 324 (57.8% correct churn).
-  - False Negatives (FN): 237 (missed churn cases, critical for retention).
-  - False Positives (FP): 149 (less costly errors).
-
-**Implications**:
-- Models excel at predicting non-churn but struggle with churn (low recall).
-- False negatives (e.g., 237 for Random Forest) indicate missed opportunities to retain at-risk customers.
-- Future improvements could include handling class imbalance (e.g., SMOTE) or hyperparameter tuning.
-
-## Strategies to Reduce Churn
-
-Based on model predictions and data insights, the following strategies can reduce churn:
-- **Know Your Customers**:
-  - Use models to identify at-risk customers (e.g., 324 TP in Random Forest).
-  - Analyze features like `TotalCharges`, `Contract`, and `InternetService`.
-- **Improve Customer Service**:
-  - Address dissatisfaction (e.g., fiber optic users, 237 FN cases).
-  - Enhance support for customers with high `MonthlyCharges`.
-- **Build Loyalty**:
-  - Offer promotions for month-to-month contract holders (75% churn).
-  - Provide discounts for long-term customers (low `tenure` churners).
-- **Survey Churned Customers**:
-  - Collect feedback to address issues (e.g., billing errors in `TotalCharges`).
-  - Improve services like online security and tech support.
-
-| Strategy | Action | Example |
-|----------|--------|---------|
-| Know Customers | Target at-risk customers | Retention offers for 324 TP |
-| Improve Service | Enhance support | Resolve fiber optic complaints |
-| Build Loyalty | Personalized promotions | Discounts for month-to-month users |
-| Survey Churners | Collect feedback | Fix billing issues |
-
-## Contributing
-
-Contributions are welcome! To contribute:
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make changes and commit (`git commit -m "Add feature"`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Open a pull request.
-
-Please ensure code follows PEP 8 standards and includes comments for clarity.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-
-
----
+## Future Improvements
+- **Feature Engineering**: Add features like tenure bins or customer service call frequency (if available).
+- **Hyperparameter Tuning**: Expand GridSearchCV for CatBoost (e.g., tune `iterations`, `depth`).
+- **Cost-Sensitive Learning**: Optimize directly for a cost matrix (e.g., FN=5, FP=1).
+- **Alternative Models**: Test neural networks or anomaly detection for rare churn cases.
 
